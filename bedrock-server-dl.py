@@ -118,13 +118,13 @@ def __request():
 try:
     __request()
 except Exception as e:
-    print("An error appeared the request! Shutting down ...")
+    print("An error appeared during the request! Shutting down ...")
     print(e)
     exit(-1)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-type", help="Downloads given build, with optional path")
+    parser.add_argument("-type", help="Downloads given build with optional path")
     parser.add_argument("-path", help="Optional destination folder")
     parser.add_argument("-info", help="Shows version info", action='count', default=0)
     args = parser.parse_args()
