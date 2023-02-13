@@ -1,5 +1,5 @@
 # Description
-**bedrock-server-dl** is a command-line program to download minecraft bedrock servers from Minecraft.net. It is also possible to use the python code to download bedrock servers in your own project.
+**bedrock-server-dl** is a command-line program to download the **latest** minecraft bedrock servers from Minecraft.net. It is also possible to use the python code to download bedrock servers in your own project. The script also is capable of just giving out the exact latest version.
 
 ``python bedrock-server-dl.py [OPTIONS]``
 ### Options
