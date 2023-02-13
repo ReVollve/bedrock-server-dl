@@ -6,6 +6,7 @@ import json
 from enum import Enum
 from rich import print
 from rich.progress import Progress
+from sys import exit
 
 servers = {}
 
@@ -40,7 +41,7 @@ def download(request: Build, folder=None):
     elif request.value == 3:
         url = servers['linux-preview']
     else:
-        print("Download request malformed! Please use numbers 0-3 for selection!")
+        print("Download request malformed!")
         return
     if folder is None:
         folder = pathlib.Path().resolve()
@@ -51,14 +52,31 @@ def download(request: Build, folder=None):
 
         get_response = requests.get(url, stream=True)
         file_name = str(folder) + "/" + url.split("/")[-1]
-        with open(file_name, 'wb') as f:
-            size = len(get_response.content)
-            task = p.add_task("[green]Downloading...", total=size)
-            for chunk in get_response.iter_content(chunk_size=1024):
-                p.update(task, advance=1024)
-                if chunk:  # filter out keep-alive new chunks
-                    f.write(chunk)
-        return file_name
+        try:
+            with open(file_name, 'wb') as f:
+                size = len(get_response.content)
+                task = p.add_task("[green]Downloading...", total=size)
+                for chunk in get_response.iter_content(chunk_size=1024):
+                    p.update(task, advance=1024)
+                    if chunk:  # filter out keep-alive new chunks
+                        f.write(chunk)
+
+        except:
+            print("[red]Download failed!")
+            return file_name
+    print("[green]Download complete!")
+    return file_name
+
+
+def gen_versions():
+    dictionary = servers.copy()
+    dictionary["version"] = latest_version()
+    dictionary["version-preview"] = latest_version(preview=True)
+
+    json_obj = json.dumps(dictionary)
+
+    with open("versions.json", "w") as out:
+        out.write(json_obj)
 
 
 def print_info():
@@ -96,7 +114,7 @@ def __request():
 try:
     __request()
 except Exception as e:
-    print("An error appeared during the request! Shutting down ...")
+    print("[red]An error appeared during the request! Shutting down ...")
     print(e)
     exit(-1)
 
@@ -105,17 +123,11 @@ if __name__ == '__main__':
     parser.add_argument("-type", help="Downloads given build with optional path")
     parser.add_argument("-path", help="Optional destination folder")
     parser.add_argument("-info", help="Shows version info", action='count', default=0)
+    parser.add_argument("-vf", help="Generates versions.json file", action='count', default=0)
     args = parser.parse_args()
 
-    dictionary = servers.copy()
-    dictionary["version"] = latest_version()
-    dictionary["version-preview"] = latest_version(preview=True)
-
-    json_obj = json.dumps(dictionary)
-
-    with open("versions.json", "w") as out:
-        out.write(json_obj)
-
+    if args.vf:
+        gen_versions()
     if args.info:
         print_info()
     if args.type is None:
@@ -133,4 +145,3 @@ if __name__ == '__main__':
         print("No or misspelled arguments were given. Shutting down")
         exit(0)
     download(build, args.path)
-    print("[green]Download complete!")
