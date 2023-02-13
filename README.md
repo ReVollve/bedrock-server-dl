@@ -18,3 +18,6 @@ Possible types are
 
 ### Notes
 - The versions.json file contains the latest links to the servers and the latest version itself
+
+## Requirements
+``pip install -r requirements.txt``
