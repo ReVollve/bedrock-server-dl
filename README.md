@@ -4,11 +4,11 @@
 ``python bedrock_server_dl.py [OPTIONS]``
 ### Options
 ```
-  -h, --help  show this help message and exit
-  -type TYPE  Downloads given build, with optional path
-  -path PATH  Optional destination folder
-  -info       Shows version info
-  -vf         Generates versions.json file
+  -h, --help   show this help message and exit
+  --type TYPE  Downloads given build with optional path
+  --path PATH  Optional destination folder
+  -i           Shows version info
+  -v           Generates versions.json file
 ```
 Possible types are
 - WINDOWS

@@ -1,12 +1,11 @@
+import os
 import requests
 import bs4
-import pathlib
 import json
 import argparse
 from enum import Enum
 from rich import print
 from rich.progress import Progress
-from sys import exit
 
 servers = {}
 
@@ -42,26 +41,26 @@ def download(request: Build, folder=None):
     :param folder: String to directory path
     :return: string to absolute file path
     """
-    if request.value == 0:
+    if request == Build.WINDOWS:
         url = servers['win']
-    elif request.value == 1:
+    elif request == Build.LINUX:
         url = servers['linux']
-    elif request.value == 2:
+    elif request == Build.WIN_PREVIEW:
         url = servers['win-preview']
-    elif request.value == 3:
+    elif request == Build.LINUX_PREVIEW:
         url = servers['linux-preview']
     else:
-        print("Download request malformed!")
+        print("[red]Download request malformed! ->", request)
         return
     if folder is None:
-        folder = pathlib.Path().resolve()
+        folder = os.path.dirname(__file__)
     print("Starting downloading build type", request.name)
     print("Destination folder will be", folder)
 
     with Progress() as p:
 
         get_response = requests.get(url, stream=True)
-        file_name = str(folder) + "/" + url.split("/")[-1]
+        file_name = os.path.join(folder, url.split("/")[-1])
         try:
             with open(file_name, 'wb') as f:
                 size = len(get_response.content)
@@ -75,7 +74,7 @@ def download(request: Build, folder=None):
             print("[red]Download failed!")
             return None
     print("[green]Download complete!")
-    return file_name
+    return str(file_name)
 
 
 def gen_versions():
@@ -112,9 +111,8 @@ def __request():
                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/109.0'}
     r = requests.get(url, headers=headers)
     soup = bs4.BeautifulSoup(r.text, 'html.parser')
-    links = soup.find_all('a')
     servers_list = []
-    for link in links:
+    for link in soup.find_all('a', {"class":"btn btn-disabled-outline mt-4 downloadlink"}):
         ref: str = link.get('href')
         if ref.count(azure):
             servers_list.append(ref)
@@ -131,19 +129,18 @@ def __request():
 
 def __main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-type", help="Downloads given build with optional path")
-    parser.add_argument("-path", help="Optional destination folder")
-    parser.add_argument("-info", help="Shows version info", action='count', default=0)
-    parser.add_argument("-vf", help="Generates versions.json file", action='count', default=0)
+    parser.add_argument("--type", help="Downloads given build with optional path")
+    parser.add_argument("--path", help="Optional destination folder")
+    parser.add_argument("-i", help="Shows version info", action='count', default=0)
+    parser.add_argument("-v", help="Generates versions.json file", action='count', default=0)
     args = parser.parse_args()
 
-    if args.vf:
+    if args.v:
         gen_versions()
-    if args.info:
+    if args.i:
         print_info()
-    if args.type is None:
-        exit(0)
-    build = None
+    if not args.type:
+        return
     if args.type == "WINDOWS":
         build = Build.WINDOWS
     elif args.type == "LINUX":
@@ -153,16 +150,15 @@ def __main():
     elif args.type == "LINUX-PREVIEW":
         build = Build.LINUX_PREVIEW
     else:
-        print("No or misspelled arguments were given. Shutting down")
-        exit(0)
+        print("No or misspelled arguments were given")
+        return
     download(build, args.path)
 
 
 try:
     __request()
-except Exception:
-    print("[red]An error appeared during the request! Shutting down ...")
-    exit(-1)
+except:
+    print("[red]Couldn't request data from minecraft.net!")
 
 if __name__ == '__main__':
     __main()
