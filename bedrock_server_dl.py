@@ -19,6 +19,10 @@ class Build(Enum):
 
 
 def latest_version(preview=False):
+    """
+    :param preview: Determines if the preview version shall be returned
+    :return: string of the latest version
+    """
     result: str = None
     if not preview:
         result = servers['linux']
@@ -32,6 +36,12 @@ def latest_version(preview=False):
 
 
 def download(request: Build, folder=None):
+    """
+    Downloads given build with optional path.
+    :param request: Build type. Example Build.LINUX will work
+    :param folder: String to directory path
+    :return: string to absolute file path
+    """
     if request.value == 0:
         url = servers['win']
     elif request.value == 1:
@@ -63,12 +73,16 @@ def download(request: Build, folder=None):
 
         except:
             print("[red]Download failed!")
-            return file_name
+            return None
     print("[green]Download complete!")
     return file_name
 
 
 def gen_versions():
+    """
+    Generates versions.json file.
+    :return versions dict:
+    """
     dictionary = servers.copy()
     dictionary["version"] = latest_version()
     dictionary["version-preview"] = latest_version(preview=True)
@@ -77,9 +91,13 @@ def gen_versions():
 
     with open("versions.json", "w") as out:
         out.write(json_obj)
+    return dictionary
 
 
 def print_info():
+    """
+    Prints information for links and versions
+    """
     for elem in servers.keys():
         print("Gathered: {:>13} | {}".format(elem, servers[elem]))
     print("Latest version: {:>18}".format(latest_version()))
@@ -111,14 +129,7 @@ def __request():
             servers["linux-preview"] = var
 
 
-try:
-    __request()
-except Exception as e:
-    print("[red]An error appeared during the request! Shutting down ...")
-    print(e)
-    exit(-1)
-
-if __name__ == '__main__':
+def __main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-type", help="Downloads given build with optional path")
     parser.add_argument("-path", help="Optional destination folder")
@@ -145,3 +156,13 @@ if __name__ == '__main__':
         print("No or misspelled arguments were given. Shutting down")
         exit(0)
     download(build, args.path)
+
+
+try:
+    __request()
+except Exception:
+    print("[red]An error appeared during the request! Shutting down ...")
+    exit(-1)
+
+if __name__ == '__main__':
+    __main()
