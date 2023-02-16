@@ -22,6 +22,8 @@ def latest_version(preview=False):
     :param preview: Determines if the preview version shall be returned
     :return: string of the latest version
     """
+    if not __first_request():
+        return
     result: str = None
     if not preview:
         result = servers['linux']
@@ -34,27 +36,29 @@ def latest_version(preview=False):
     return result
 
 
-def download(request: Build, folder=None):
+def download(build: Build, folder=None):
     """
     Downloads given build with optional path.
-    :param request: Build type. Example Build.LINUX will work
+    :param build: Build type. Example Build.LINUX will work
     :param folder: String to directory path
     :return: string to absolute file path
     """
-    if request == Build.WINDOWS:
+    if not __first_request():
+        return
+    if build == Build.WINDOWS:
         url = servers['win']
-    elif request == Build.LINUX:
+    elif build == Build.LINUX:
         url = servers['linux']
-    elif request == Build.WIN_PREVIEW:
+    elif build == Build.WIN_PREVIEW:
         url = servers['win-preview']
-    elif request == Build.LINUX_PREVIEW:
+    elif build == Build.LINUX_PREVIEW:
         url = servers['linux-preview']
     else:
-        print("[red]Download request malformed! ->", request)
+        print("[red]Download request malformed! ->", build)
         return
     if folder is None:
         folder = os.path.dirname(__file__)
-    print("Starting downloading build type", request.name)
+    print("Starting downloading build type", build.name)
     print("Destination folder will be", folder)
 
     with Progress() as p:
@@ -82,6 +86,8 @@ def gen_versions():
     Generates versions.json file.
     :return versions dict:
     """
+    if not __first_request():
+        return
     dictionary = servers.copy()
     dictionary["version"] = latest_version()
     dictionary["version-preview"] = latest_version(preview=True)
@@ -97,13 +103,15 @@ def print_info():
     """
     Prints information for links and versions
     """
+    if not __first_request():
+        return
     for key, value in servers.items():
         print("Gathered: {:>13} | {}".format(key, value))
     print("Latest version: {:>18}".format(latest_version()))
     print("Latest preview version: {:>10}".format(latest_version(preview=True)))
 
 
-def __request():
+def request():
     url = 'https://minecraft.net/en-us/download/server/bedrock'
     azure = "https://minecraft.azureedge.net/"
     headers = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
@@ -112,7 +120,7 @@ def __request():
     r = requests.get(url, headers=headers)
     soup = bs4.BeautifulSoup(r.text, 'html.parser')
     servers_list = []
-    for link in soup.find_all('a', {"class":"btn btn-disabled-outline mt-4 downloadlink"}):
+    for link in soup.find_all('a', {"class": "btn btn-disabled-outline mt-4 downloadlink"}):
         ref: str = link.get('href')
         if ref.count(azure):
             servers_list.append(ref)
@@ -127,7 +135,21 @@ def __request():
             servers["linux-preview"] = var
 
 
+def __first_request():
+    if servers == {}:
+        try:
+            request()
+        except:
+            print("[red]Couldn't request data from minecraft.net!")
+            return False
+        return True
+    else:
+        return True
+
+
 def __main():
+    if not __first_request():
+        return
     parser = argparse.ArgumentParser()
     parser.add_argument("--type", help="Downloads given build with optional path")
     parser.add_argument("--path", help="Optional destination folder")
@@ -154,11 +176,6 @@ def __main():
         return
     download(build, args.path)
 
-
-try:
-    __request()
-except:
-    print("[red]Couldn't request data from minecraft.net!")
 
 if __name__ == '__main__':
     __main()
