@@ -1,8 +1,8 @@
 import requests
 import bs4
 import pathlib
-import argparse
 import json
+import argparse
 from enum import Enum
 from rich import print
 from rich.progress import Progress
