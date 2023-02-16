@@ -67,7 +67,7 @@ def download(request: Build, folder=None):
                 task = p.add_task("[green]Downloading...", total=size)
                 for chunk in get_response.iter_content(chunk_size=1024):
                     p.update(task, advance=1024)
-                    if chunk:  # filter out keep-alive new chunks
+                    if chunk:
                         f.write(chunk)
 
         except:
@@ -97,8 +97,8 @@ def print_info():
     """
     Prints information for links and versions
     """
-    for elem in servers.keys():
-        print("Gathered: {:>13} | {}".format(elem, servers[elem]))
+    for key, value in servers.items():
+        print("Gathered: {:>13} | {}".format(key, value))
     print("Latest version: {:>18}".format(latest_version()))
     print("Latest preview version: {:>10}".format(latest_version(preview=True)))
 
