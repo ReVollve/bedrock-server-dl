@@ -1,11 +1,11 @@
 import os
+import sys
+import time
 import requests
 import bs4
 import json
 import argparse
 from enum import Enum
-from rich import print
-from rich.progress import Progress
 
 servers = {}
 
@@ -54,30 +54,25 @@ def download(build: Build, folder=None):
     elif build == Build.LINUX_PREVIEW:
         url = servers['linux-preview']
     else:
-        print("[red]Download request malformed! ->", build)
+        print("Download request malformed! ->", build)
         return
     if folder is None:
         folder = os.path.dirname(__file__)
     print("Starting downloading build type", build.name)
     print("Destination folder will be", folder)
 
-    with Progress() as p:
+    get_response = requests.get(url, stream=True)
+    file_name = os.path.join(folder, url.split("/")[-1])
+    try:
+        with open(file_name, 'wb') as f:
+            for chunk in get_response.iter_content(chunk_size=1024):
+                if chunk:
+                    f.write(chunk)
 
-        get_response = requests.get(url, stream=True)
-        file_name = os.path.join(folder, url.split("/")[-1])
-        try:
-            with open(file_name, 'wb') as f:
-                size = len(get_response.content)
-                task = p.add_task("[green]Downloading...", total=size)
-                for chunk in get_response.iter_content(chunk_size=1024):
-                    p.update(task, advance=1024)
-                    if chunk:
-                        f.write(chunk)
-
-        except:
-            print("[red]Download failed!")
-            return None
-    print("[green]Download complete!")
+    except:
+        print("Download failed!")
+        return
+    print("Download complete!")
     return str(file_name)
 
 
@@ -112,6 +107,9 @@ def print_info():
 
 
 def request():
+    """
+    Retrieves the latest versions from minecraft.net.
+    """
     url = 'https://minecraft.net/en-us/download/server/bedrock'
     azure = "https://minecraft.azureedge.net/"
     headers = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
@@ -140,7 +138,7 @@ def __first_request():
         try:
             request()
         except:
-            print("[red]Couldn't request data from minecraft.net!")
+            print("Couldn't request data from minecraft.net!")
             return False
     return True
 
@@ -149,10 +147,10 @@ def __main():
     if not __first_request():
         return
     parser = argparse.ArgumentParser()
-    parser.add_argument("--type", help="Downloads given build with optional path")
-    parser.add_argument("--path", help="Optional destination folder")
-    parser.add_argument("-i", help="Shows version info", action='count', default=0)
-    parser.add_argument("-v", help="Generates versions.json file", action='count', default=0)
+    parser.add_argument("-t", "--type", help="Downloads given build with optional path")
+    parser.add_argument("-p", "--path", help="Optional destination folder")
+    parser.add_argument("-i", "--info", help="Prints version info", action='count', default=0)
+    parser.add_argument("-v", "--vfile", help="Generates versions.json file", action='count', default=0)
     args = parser.parse_args()
 
     if args.v:
