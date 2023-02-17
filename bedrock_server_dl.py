@@ -142,9 +142,7 @@ def __first_request():
         except:
             print("[red]Couldn't request data from minecraft.net!")
             return False
-        return True
-    else:
-        return True
+    return True
 
 
 def __main():
